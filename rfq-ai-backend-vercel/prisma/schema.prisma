@@ -1,0 +1,70 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  BUYER
+  SUPPLIER
+  ADMIN
+}
+
+enum RFQStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(BUYER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rfqs      RFQ[]    @relation("UserRFQs")
+  responses SupplierResponse[]
+}
+
+model RFQ {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  buyer       User         @relation("UserRFQs", fields: [buyerId], references: [id])
+  buyerId     String
+  status      RFQStatus    @default(DRAFT)
+  dueDate     DateTime?
+  lineItems   LineItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  responses   SupplierResponse[]
+}
+
+model LineItem {
+  id        String  @id @default(cuid())
+  rfq       RFQ     @relation(fields: [rfqId], references: [id])
+  rfqId     String
+  name      String
+  quantity  Int
+  unit      String
+  notes     String?
+}
+
+model SupplierResponse {
+  id         String   @id @default(cuid())
+  rfq        RFQ      @relation(fields: [rfqId], references: [id])
+  rfqId      String
+  supplier   User     @relation(fields: [supplierId], references: [id])
+  supplierId String
+  message    String
+  priceTotal Float?
+  leadDays   Int?
+  attachments Json?
+  createdAt  DateTime @default(now())
+}
